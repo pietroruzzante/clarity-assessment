@@ -101,7 +101,7 @@ def test_tmdb_retries_then_raises_unavailable(mocker):
     mocker.patch.object(
         tmdb_mod.requests, "get", side_effect=requests.RequestException("network down")
     )
-    sleep_patch = mocker.patch("time.sleep", return_value=None)
+    mocker.patch("time.sleep", return_value=None)
     try:
         get_trending_movies()
         assert False, "expected TMDBUnavailableError"
@@ -147,7 +147,7 @@ def test_handle_query_hides_exception_from_user(mocker):
     mocker.patch.object(main_mod, "console")
 
     state = {"messages": [], "route": "netflix_catalog"}
-    result = main_mod.handle_query(fake_graph, state, "recommend me something")
+    main_mod.handle_query(fake_graph, state, "recommend me something")
 
     printed_texts = [call.args[0] for call in main_mod.console.print.call_args_list if call.args]
     assert any(main_mod.GENERIC_ERROR in text for text in printed_texts)
