@@ -52,14 +52,17 @@ def _keyword_fallback(query: str, previous_route: Route) -> Route:
     return previous_route
 
 
+def _classify_route(messages: list) -> RouteDecision:
+    """Thin wrapper so tests can mock this without touching the pydantic LLM object."""
+    return _structured_router.invoke(messages)
+
+
 def router_node(state: ChatState) -> ChatState:
     query = state["messages"][-1].content
     previous_route = state.get("route") or "netflix_catalog"
     try:
         system_prompt = ROUTER_PROMPT.format(previous_route=previous_route)
-        decision = _structured_router.invoke(
-            [{"role": "system", "content": system_prompt}] + state["messages"]
-        )
+        decision = _classify_route([{"role": "system", "content": system_prompt}] + state["messages"])
         route = decision.route
     except Exception as exc:
         logger.warning("Router LLM call failed (%s), using keyword fallback.", exc)

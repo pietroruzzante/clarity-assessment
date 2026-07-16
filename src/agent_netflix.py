@@ -14,6 +14,11 @@ SYSTEM_PROMPT = (
 )
 
 
+def _generate_reply(messages: list):
+    """Thin wrapper so tests can mock this without touching the pydantic LLM object."""
+    return _llm.invoke(messages)
+
+
 def netflix_node(state: dict) -> dict:
     query = state["messages"][-1].content
     retriever = get_retriever()
@@ -21,5 +26,5 @@ def netflix_node(state: dict) -> dict:
     context = "\n\n".join(doc.page_content for doc in docs)
 
     system = SystemMessage(content=SYSTEM_PROMPT.format(context=context))
-    response = _llm.invoke([system] + state["messages"])
+    response = _generate_reply([system] + state["messages"])
     return {"messages": state["messages"] + [response]}

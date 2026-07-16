@@ -45,6 +45,19 @@ def _stream_turn(graph, state: dict) -> dict:
     return final_state
 
 
+def handle_query(graph, state: dict, query: str) -> dict:
+    """Run one turn; on any unhandled error, hide it behind a generic message."""
+    state["messages"] = state["messages"] + [HumanMessage(content=query)]
+    try:
+        final_state = _stream_turn(graph, state)
+        state["messages"] = final_state["messages"]
+        state["route"] = final_state.get("route", state.get("route"))
+    except Exception:
+        logger.exception("Unhandled error during turn.")
+        console.print(f"[dim]Bot:[/dim] [red]{GENERIC_ERROR}[/red]")
+    return state
+
+
 def run():
     console.print(WELCOME)
     graph = build_graph()
@@ -63,14 +76,7 @@ def run():
         if not query.strip():
             continue
 
-        state["messages"] = state["messages"] + [HumanMessage(content=query)]
-
-        try:
-            final_state = _stream_turn(graph, state)
-            state["messages"] = final_state["messages"]
-        except Exception:
-            logger.exception("Unhandled error during turn.")
-            console.print(f"[dim]Bot:[/dim] [red]{GENERIC_ERROR}[/red]")
+        state = handle_query(graph, state, query)
 
 
 if __name__ == "__main__":
