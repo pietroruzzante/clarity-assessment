@@ -1,4 +1,4 @@
-# Movie Recommendation Chatbot
+# Pietro Ruzzante - Clarity Assessment -  Movie Recommendation Chatbot
 
 An agentic movie recommendation chatbot with two specialized agents — trending movies
 (TMDB) and Netflix catalog search (RAG) — routed by an LLM, built on LangGraph, with
