@@ -1,7 +1,12 @@
 import logging
 import os
+import warnings
 
 from dotenv import load_dotenv
+
+# Cosmetic: langchain-openai's structured-output wrapper trips a harmless
+# Pydantic serializer warning when logging/echoing the parsed response.
+warnings.filterwarnings("ignore", message="Pydantic serializer warnings")
 
 load_dotenv()
 

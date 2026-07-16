@@ -40,7 +40,9 @@ def _ingest_if_needed() -> None:
         }
         documents.append(Document(page_content=text, metadata=metadata))
 
-    _store.add_documents(documents)
+    batch_size = 1000
+    for i in range(0, len(documents), batch_size):
+        _store.add_documents(documents[i : i + batch_size])
     logger.info("Ingested %d Netflix titles.", len(documents))
 
 
