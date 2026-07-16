@@ -1,0 +1,72 @@
+# Movie Recommendation Chatbot
+
+An agentic movie recommendation chatbot with two specialized agents — trending movies
+(TMDB) and Netflix catalog search (RAG) — routed by an LLM, built on LangGraph, with
+a streaming CLI.
+
+## Setup
+
+```bash
+python -m venv .venv
+source .venv/bin/activate        # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+cp .env.example .env
+```
+
+Edit `.env` and set:
+
+```
+OPENAI_API_KEY=<your OpenAI gateway key>
+TMDB_API_KEY=<your TMDB Read Access Token (v4 auth), not the v3 API key>
+```
+
+Get a free TMDB key at https://www.themoviedb.org/settings/api — use the **Read
+Access Token (JWT)**, not the shorter API key, since the client sends it as a Bearer
+header.
+
+The Netflix dataset (`data/titles.csv`, from [Kaggle](https://www.kaggle.com/datasets/victorsoeiro/netflix-tv-shows-and-movies))
+is already included in the repo, so no Kaggle account is needed.
+
+## Run
+
+```bash
+python -m src.main
+```
+
+On first run, the Netflix catalog is embedded into a local Chroma index
+(`./chroma_db`) — this takes 1-2 minutes and a few cents in embedding calls.
+Subsequent runs reuse the cached index.
+
+Type `exit` or `quit` to leave, or press Ctrl+C.
+
+### Example queries
+
+- "Which recent movie do you recommend to watch today?" — trending agent
+- "What is the current best movie released lately?" — trending agent
+- "What are some good Netflix nature documentaries?" — Netflix RAG agent
+- "I want to see a romantic comedy movie. What do you recommend?" — Netflix RAG agent
+- "What's the weather today?" — off-topic, politely declined
+
+## Tests
+
+```bash
+pytest -q
+```
+
+All 10 tests run fully mocked — no API keys or network access required.
+
+## Project layout
+
+```
+src/
+├── main.py           # CLI REPL, streaming output, error hiding
+├── graph.py           # LangGraph state, router, orchestration
+├── agent_trending.py   # Agent 1: TMDB trending movies
+├── agent_netflix.py     # Agent 2: Netflix RAG
+├── tmdb.py                # TMDB client with retry
+├── rag.py                  # Netflix CSV ingestion + Chroma retriever
+└── config.py                # env settings, logging
+tests/test_chatbot.py          # mocked pytest suite
+```
+
+See `REPORT.md` for design rationale, assumptions, and next steps.
