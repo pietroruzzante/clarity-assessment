@@ -5,7 +5,9 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
+# Placeholder keeps client construction working at import time (e.g. for tests
+# that mock network calls); a real .env value is required for actual runs.
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY") or "sk-placeholder"
 TMDB_API_KEY = os.environ.get("TMDB_API_KEY", "")
 
 ROUTER_MODEL = "gpt-4o-mini"
