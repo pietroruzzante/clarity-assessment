@@ -1,17 +1,18 @@
 # Report — Agentic Movie Recommendation Chatbot
 
-## A note on process
+## Introduction
 
-I had limited time to complete this assessment (~5 hours end to end), so I
+I had limited time to complete this assessment (about 5 hours end to end), so I
 optimized for a small, working solution over a more elaborate one: two clearly
-separated agents, a router with a sensible fallback, real error handling, and a
-mocked test suite — rather than a larger surface area of half-finished features.
+separated agents, a LLM-based router with a sensible fallback, real error handling, and a
+mocked test suite.
 
-I used Claude Code throughout the build, mainly to keep the work organized into
+Regarding AI tools, I used Claude Code throughout the build, mainly to keep the work organized into
 concrete steps and as a hands-on coding assistant for writing and debugging the
-implementation. The architectural decisions — the LangGraph design, the routing
+implementation. 
+The architectural decisions — the LangGraph design, the routing
 strategy (LLM classifier + keyword fallback + context-aware follow-ups), and the
-overall technical approach — were mine; I directed those choices rather than
+overall technical approach — were mine. I directed those choices rather than
 delegating them, and used AI as an accelerant for execution once the direction
 was set.
 
@@ -38,12 +39,14 @@ context for follow-up turns. The CLI (`src/main.py`) drives the graph with
 the tokens whose `langgraph_node` metadata matches an agent node — the
 router's raw structured-output call never leaks into the terminal.
 
-A query flows as: user input → router classifies (LLM + keyword fallback)
-→ conditional edge to the matching agent → agent generates a response
-(grounded in TMDB data or retrieved Netflix documents) → streamed back
+A query flows as: user input --> router classifies (LLM + keyword fallback)
+--> conditional edge to the matching agent --> agent generates a response
+(grounded in TMDB data or retrieved Netflix documents) --> streamed back
 token-by-token.
 
 ## Design choices
+
+Here a summary of the decisons that I made:
 
 | Decision | Choice | Rationale |
 |---|---|---|
@@ -67,12 +70,12 @@ token-by-token.
 - Out-of-domain queries (e.g. "what's the weather?") get a fixed polite decline via
   a third `off_topic` router class, rather than being forced into one of the two
   agents.
-- Submission is via a public GitHub repo rather than a zip.
+- Submission is via a public GitHub repo to show commits history.
 
 ## Challenges & results
 
 1. **Chroma's batch size cap on bulk ingestion.** Embedding and inserting all
-   ~6,000 Netflix titles in a single `add_documents()` call exceeded Chroma's
+   6,000 Netflix titles in a single `add_documents()` call exceeded Chroma's
    internal max batch size (a hard cap independent of dataset size). Fixed by
    chunking ingestion into batches of 1,000 documents.
 2. **Router losing conversation context on short follow-ups.** Classifying only
@@ -88,7 +91,9 @@ token-by-token.
    Python function (`_classify_route`, `_generate_reply`) that tests can patch
    directly.
 
-## Next steps / productization
+## Next steps 
+
+If I had more time, this is what I would have implemented:
 
 - **Persistent conversational memory** across CLI sessions (currently in-memory only,
   lost on restart) — e.g. a lightweight SQLite/Redis-backed LangGraph checkpointer.
@@ -100,12 +105,9 @@ token-by-token.
   the time available — but it doesn't scale to real users. A production version
   would expose the same `graph.stream()` call behind a FastAPI endpoint using
   Server-Sent Events (or WebSockets) to keep token-by-token streaming over HTTP,
-  with a thin React (or HTMX, for less frontend overhead) chat UI on top — message
+  with a thin React chat UI on top — message
   bubbles, a typing indicator during routing/retrieval, and the same
   graceful-degradation messages surfaced in the UI instead of the terminal.
-  Conversation state would move from an in-process Python list to the persistent
-  memory layer mentioned above, keyed by session ID, so concurrent users don't
-  share state.
 - **Containerization** (Docker) for consistent deployment across environments.
 - **TMDB response caching** (e.g. short TTL cache) to reduce redundant calls and
   improve resilience to rate limits.
