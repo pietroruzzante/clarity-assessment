@@ -36,29 +36,34 @@ ROUTER_PROMPT = (
     "Classify the user's latest message into one of: 'trending' (current/recent "
     "movies, what's popular today), 'netflix_catalog' (Netflix movies/shows by "
     "genre, mood, or theme), or 'off_topic' (anything not about movie/show "
-    "recommendations)."
+    "recommendations). The previous turn's topic was '{previous_route}'. A short "
+    "follow-up (e.g. 'something funnier', 'anything else?', 'what about action') "
+    "that doesn't introduce a new subject continues that same topic — classify it "
+    "as '{previous_route}', not 'off_topic'."
 )
 
 
-def _keyword_fallback(query: str) -> Route:
+def _keyword_fallback(query: str, previous_route: Route) -> Route:
     lowered = query.lower()
     if any(word in lowered for word in TRENDING_KEYWORDS):
         return "trending"
     if any(word in lowered for word in NETFLIX_KEYWORDS):
         return "netflix_catalog"
-    return "netflix_catalog"
+    return previous_route
 
 
 def router_node(state: ChatState) -> ChatState:
     query = state["messages"][-1].content
+    previous_route = state.get("route") or "netflix_catalog"
     try:
+        system_prompt = ROUTER_PROMPT.format(previous_route=previous_route)
         decision = _structured_router.invoke(
-            [{"role": "system", "content": ROUTER_PROMPT}, {"role": "user", "content": query}]
+            [{"role": "system", "content": system_prompt}] + state["messages"]
         )
         route = decision.route
     except Exception as exc:
         logger.warning("Router LLM call failed (%s), using keyword fallback.", exc)
-        route = _keyword_fallback(query)
+        route = _keyword_fallback(query, previous_route)
     return {"messages": state["messages"], "route": route}
 
 
