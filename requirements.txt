@@ -1,0 +1,11 @@
+langgraph
+langchain-openai
+langchain-chroma
+chromadb
+pandas
+requests
+tenacity
+python-dotenv
+rich
+pytest
+pytest-mock
