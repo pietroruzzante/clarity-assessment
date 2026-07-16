@@ -116,7 +116,7 @@ def test_netflix_node_uses_retrieved_documents(mocker):
     docs = [Document(page_content="Our Planet (SHOW): a nature documentary. Genres: Documentation")]
     mock_retriever = mocker.Mock()
     mock_retriever.invoke.return_value = docs
-    mocker.patch.object(rag_mod, "get_retriever", return_value=mock_retriever)
+    mocker.patch.object(agent_netflix, "get_retriever", return_value=mock_retriever)
 
     mock_response = AIMessage(content="I recommend Our Planet.")
     mock_generate = mocker.patch.object(agent_netflix, "_generate_reply", return_value=mock_response)
