@@ -7,7 +7,12 @@ a streaming CLI.
 ## Setup
 
 ```bash
-python -m venv .venv
+git clone https://github.com/pietroruzzante/clarity-assessment.git
+cd clarity-assessment
+```
+Then:
+```bash
+python3 -m venv .venv
 source .venv/bin/activate        # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 pip install -e .
