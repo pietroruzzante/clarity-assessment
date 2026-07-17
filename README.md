@@ -18,13 +18,8 @@ Edit `.env` and set:
 
 ```
 OPENAI_API_KEY=<your OpenAI gateway key>
-TMDB_API_KEY=<your TMDB Read Access Token (v4 auth), not the v3 API key>
+TMDB_API_KEY=<your TMDB Read Access Token (v4 auth)>
 ```
-
-Get a free TMDB key at https://www.themoviedb.org/settings/api — use the **Read
-Access Token (JWT)**, not the shorter API key, since the client sends it as a Bearer
-header.
-
 The Netflix dataset (`data/titles.csv`, from [Kaggle](https://www.kaggle.com/datasets/victorsoeiro/netflix-tv-shows-and-movies))
 is already included in the repo, so no Kaggle account is needed.
 
