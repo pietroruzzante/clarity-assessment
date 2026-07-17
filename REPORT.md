@@ -58,8 +58,35 @@ Here a summary of the decisons that I made:
 | Multi-turn context | Full uncapped message history passed to router and both agents | Simplest correct implementation for a short conversation; router prompt explicitly says a topic-less follow-up continues the previous route |
 | Streaming | Token-by-token for the final agent's answer only, filtered by `langgraph_node` | Keeps the terminal output clean — never shows the router's internal classification call |
 | Errors | Per-turn try/except in `main.py`, TMDB retry (tenacity, 3 attempts) + graceful degradation, `logging` to `app.log` (DEBUG) / stderr (WARNING+) | Meets the "hide errors and failures" requirement while keeping the code path short |
-| Testing | `pytest` + `pytest-mock`, 10 tests, all mocked | No API keys needed to run the suite; keeps tests fast and deterministic |
+| Testing | `pytest` + `pytest-mock`, 12 tests, all mocked | No API keys needed to run the suite; keeps tests fast and deterministic |
 | Packaging | `pip` + `requirements.txt` + `.env.example` | Simplest reproducible setup for a take-home; no need for Docker/poetry given the scope |
+
+## Evaluation & Observability
+
+- **Evaluation (`eval.py`)**: a standalone script that runs the 6 example queries
+  from the assessment through the real compiled graph and scores each response
+  with an LLM-as-judge (`gpt-4o-mini`, structured output) on two axes: relevance
+  (1-5) and groundedness (are all cited titles actually present in the context
+  the agent used — the TMDB trending list or the retrieved Chroma documents —
+  rather than the judge guessing from general knowledge). Results are written to
+  `eval_results.md` (summary line + per-query table) and printed to stdout. It's
+  intentionally separate from `pytest`: it makes real API calls and is meant to
+  be run manually to get a point-in-time quality snapshot, not on every commit.
+- **Observability (`src/tracing.py`)**: a lightweight `trace_node()` context
+  manager wraps the router and both agent nodes, appending one structured JSON
+  line per node execution to `traces.jsonl` — timestamp, a shared `turn_id`,
+  node name, latency, the route decided, whether the router's keyword fallback
+  fired, whether the trending agent degraded, any error, and token usage when
+  available. Tracing failures are caught and logged rather than ever breaking a
+  user-facing turn.
+- **Rationale**: given the time constraint, I deliberately scaled this down to
+  structured JSONL logging plus a manual eval script rather than wiring in a full
+  observability platform (Langfuse/OpenTelemetry) or a persistent eval-tracking
+  system (MLflow) — the same category of workflow I've used in a previous role,
+  just sized appropriately for a take-home. `traces.jsonl` and `eval_results.md`
+  are the local, dependency-free version of that same idea: every node run is
+  inspectable, and response quality is measured against a fixed query set rather
+  than judged by eye.
 
 ## Assumptions
 
@@ -97,9 +124,6 @@ If I had more time, this is what I would have implemented:
 
 - **Persistent conversational memory** across CLI sessions (currently in-memory only,
   lost on restart) — e.g. a lightweight SQLite/Redis-backed LangGraph checkpointer.
-- **Evaluation**: LLM-as-judge scoring of recommendation relevance and groundedness
-  (no hallucinated titles), tracked over time with an eval framework (e.g. MLflow or
-  Langfuse) for regression detection across prompt/model changes.
 - **REST API + minimal web UI.** The CLI was the right call for this exercise —
   fastest to build and to verify streaming/routing/error-hiding end to end within
   the time available — but it doesn't scale to real users. A production version
@@ -111,9 +135,10 @@ If I had more time, this is what I would have implemented:
 - **Containerization** (Docker) for consistent deployment across environments.
 - **TMDB response caching** (e.g. short TTL cache) to reduce redundant calls and
   improve resilience to rate limits.
-- **Observability**: distributed tracing (e.g. OpenTelemetry/Langfuse) across the
-  router → agent → external API/vector-store call chain, for latency and failure
-  diagnosis in production.
+- **Richer observability**: evolve the current `traces.jsonl` logging into
+  proper distributed tracing (e.g. OpenTelemetry/Langfuse) with a dashboard and
+  alerting, and move the eval script into a tracked, repeatable pipeline
+  (e.g. MLflow or Langfuse) for regression detection across prompt/model changes.
 - **Guardrails**: stricter validation that agent responses only cite
   actually-retrieved/fetched titles (currently enforced only via prompt
   instruction, not verified programmatically).

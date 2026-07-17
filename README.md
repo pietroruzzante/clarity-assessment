@@ -53,7 +53,32 @@ Type `exit` or `quit` to leave, or press Ctrl+C.
 pytest -q
 ```
 
-All 10 tests run fully mocked — no API keys or network access required.
+All 12 tests run fully mocked — no API keys or network access required.
+
+## Evaluation & Observability
+
+```bash
+python eval.py
+```
+
+Runs the 6 example queries from the assessment through the real graph, scores
+each response with an LLM-as-judge (relevance 1-5, groundedness against the
+actual TMDB/Netflix context the agent used), and writes `eval_results.md`
+(a summary line + a per-query table) while also printing the summary to
+stdout. Unlike `pytest`, this makes real OpenAI/TMDB API calls, so it needs a
+valid `.env` — run it manually when you want a snapshot of response quality,
+not on every commit.
+
+Every node execution (router, trending agent, netflix agent) also appends one
+JSON line to `traces.jsonl` — timestamp, `turn_id` (shared by all nodes in the
+same user turn), node name, latency, the route decided, whether the router's
+keyword fallback fired, whether the trending agent degraded (TMDB down), any
+error, and token usage when available. Inspect it while chatting:
+
+```bash
+tail -f traces.jsonl        # watch traces live in another terminal
+cat traces.jsonl | jq .     # pretty-print everything so far
+```
 
 ## Project layout
 
@@ -65,8 +90,10 @@ src/
 ├── agent_netflix.py     # Agent 2: Netflix RAG
 ├── tmdb.py                # TMDB client with retry
 ├── rag.py                  # Netflix CSV ingestion + Chroma retriever
-└── config.py                # env settings, logging
-tests/test_chatbot.py          # mocked pytest suite
+├── tracing.py                # structured JSONL tracing (traces.jsonl)
+└── config.py                   # env settings, logging
+tests/test_chatbot.py             # mocked pytest suite
+eval.py                             # LLM-as-judge evaluation script (manual, real API calls)
 ```
 
 See `REPORT.md` for design rationale, assumptions, and next steps.

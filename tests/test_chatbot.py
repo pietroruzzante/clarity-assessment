@@ -3,12 +3,16 @@ import requests
 from langchain_core.documents import Document
 from langchain_core.messages import AIMessage, HumanMessage
 
+import json
+
 import src.agent_netflix as agent_netflix
 import src.graph as graph_mod
 import src.main as main_mod
 import src.rag as rag_mod
 import src.tmdb as tmdb_mod
+import src.tracing as tracing_mod
 from src.tmdb import TMDBUnavailableError, get_trending_movies
+from src.tracing import trace_node
 
 
 # ---- Router ----------------------------------------------------------
@@ -152,3 +156,39 @@ def test_handle_query_hides_exception_from_user(mocker):
     printed_texts = [call.args[0] for call in main_mod.console.print.call_args_list if call.args]
     assert any(main_mod.GENERIC_ERROR in text for text in printed_texts)
     assert not any("RuntimeError" in text or "Traceback" in text for text in printed_texts)
+
+
+# ---- Tracing --------------------------------------------------------------
+
+def test_trace_node_writes_valid_json_line(tmp_path, mocker):
+    trace_file = tmp_path / "traces.jsonl"
+    mocker.patch.object(tracing_mod, "TRACE_FILE", str(trace_file))
+
+    with trace_node("router", "turn-1") as trace:
+        trace["route"] = "trending"
+
+    lines = trace_file.read_text().strip().splitlines()
+    assert len(lines) == 1
+    record = json.loads(lines[0])
+    assert record["turn_id"] == "turn-1"
+    assert record["node"] == "router"
+    assert record["route"] == "trending"
+    assert record["error"] is None
+    assert isinstance(record["latency_ms"], (int, float))
+    assert "timestamp" in record
+
+
+def test_trace_node_logs_error_without_swallowing_exception(tmp_path, mocker):
+    trace_file = tmp_path / "traces.jsonl"
+    mocker.patch.object(tracing_mod, "TRACE_FILE", str(trace_file))
+
+    try:
+        with trace_node("netflix_agent", "turn-2"):
+            raise RuntimeError("boom")
+        assert False, "expected RuntimeError to propagate"
+    except RuntimeError:
+        pass
+
+    record = json.loads(trace_file.read_text().strip().splitlines()[0])
+    assert record["error"] == "boom"
+    assert record["node"] == "netflix_agent"

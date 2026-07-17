@@ -1,3 +1,4 @@
+import uuid
 from typing import Literal, TypedDict
 
 from langchain_core.messages import AIMessage, BaseMessage
@@ -8,6 +9,7 @@ from pydantic import BaseModel
 from src.agent_netflix import netflix_node
 from src.agent_trending import trending_node
 from src.config import OPENAI_API_KEY, ROUTER_MODEL, logger
+from src.tracing import trace_node
 
 Route = Literal["trending", "netflix_catalog", "off_topic"]
 
@@ -27,6 +29,7 @@ class RouteDecision(BaseModel):
 class ChatState(TypedDict):
     messages: list[BaseMessage]
     route: Route
+    turn_id: str
 
 
 _router_llm = ChatOpenAI(model=ROUTER_MODEL, api_key=OPENAI_API_KEY, temperature=0)
@@ -60,14 +63,22 @@ def _classify_route(messages: list) -> RouteDecision:
 def router_node(state: ChatState) -> ChatState:
     query = state["messages"][-1].content
     previous_route = state.get("route") or "netflix_catalog"
-    try:
-        system_prompt = ROUTER_PROMPT.format(previous_route=previous_route)
-        decision = _classify_route([{"role": "system", "content": system_prompt}] + state["messages"])
-        route = decision.route
-    except Exception as exc:
-        logger.warning("Router LLM call failed (%s), using keyword fallback.", exc)
-        route = _keyword_fallback(query, previous_route)
-    return {"messages": state["messages"], "route": route}
+    turn_id = state.get("turn_id") or str(uuid.uuid4())[:8]
+
+    with trace_node("router", turn_id) as trace:
+        try:
+            system_prompt = ROUTER_PROMPT.format(previous_route=previous_route)
+            decision = _classify_route(
+                [{"role": "system", "content": system_prompt}] + state["messages"]
+            )
+            route = decision.route
+        except Exception as exc:
+            logger.warning("Router LLM call failed (%s), using keyword fallback.", exc)
+            route = _keyword_fallback(query, previous_route)
+            trace["fallback_triggered"] = True
+        trace["route"] = route
+
+    return {"messages": state["messages"], "route": route, "turn_id": turn_id}
 
 
 def _off_topic_node(state: ChatState) -> ChatState:
