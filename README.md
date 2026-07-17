@@ -30,6 +30,8 @@ is already included in the repo, so no Kaggle account is needed.
 
 ## Run
 
+From your terminal just run: 
+
 ```bash
 moviebot
 ```
