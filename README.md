@@ -10,6 +10,7 @@ a streaming CLI.
 python -m venv .venv
 source .venv/bin/activate        # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
+pip install -e .
 cp .env.example .env
 ```
 
@@ -30,8 +31,11 @@ is already included in the repo, so no Kaggle account is needed.
 ## Run
 
 ```bash
-python -m src.main
+moviebot
 ```
+
+(`pip install -e .` registers this console command; if you skipped that step,
+`python -m src.main` works identically.)
 
 On first run, the Netflix catalog is embedded into a local Chroma index
 (`./chroma_db`) — this takes 1-2 minutes and a few cents in embedding calls.

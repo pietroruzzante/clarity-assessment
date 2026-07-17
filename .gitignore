@@ -6,3 +6,4 @@ chroma_db/
 app.log
 traces.jsonl
 eval_results.md
+*.egg-info/

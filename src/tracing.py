@@ -3,9 +3,9 @@ import time
 from contextlib import contextmanager
 from datetime import datetime, timezone
 
-from src.config import logger
+from src.config import BASE_DIR, logger
 
-TRACE_FILE = "traces.jsonl"
+TRACE_FILE = str(BASE_DIR / "traces.jsonl")
 
 
 def _write_trace(record: dict) -> None:
