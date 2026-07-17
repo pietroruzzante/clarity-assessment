@@ -16,6 +16,16 @@ overall technical approach — were mine. I directed those choices rather than
 delegating them, and used AI as an accelerant for execution once the direction
 was set.
 
+Within that time budget, I covered the assessment's required functionality
+first — both agents, routing, streaming, error handling, and a mocked test
+suite — and then chose to spend the remaining time on evaluation and
+observability (`eval.py` and `src/tracing.py`) rather than, say, a web UI or
+extra polish elsewhere. That's the area closest to my own background and where
+I felt I could add the most signal beyond the base requirements: an
+LLM-as-judge eval loop and structured per-node tracing are the same category
+of workflow I've built and relied on professionally, just scoped down to fit
+here.
+
 ## Approach
 
 The chatbot is a LangGraph `StateGraph` with four nodes: a router and three
