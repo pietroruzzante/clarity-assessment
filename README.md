@@ -4,16 +4,18 @@ An agentic movie recommendation chatbot with two specialized agents — trending
 (TMDB) and Netflix catalog search (RAG) — routed by an LLM, built on LangGraph, with
 a streaming CLI.
 
+## Requirements
+
+- Python 3.10+
+
 ## Setup
 
 ```bash
 git clone https://github.com/pietroruzzante/clarity-assessment.git
 cd clarity-assessment
-```
-Then:
-```bash
-python3 -m venv .venv
-source .venv/bin/activate        # Windows: .venv\Scripts\activate
+python3.10 -m venv .venv          # or: python3 -m venv .venv, if python3 --version is already 3.10+
+source .venv/bin/activate         # Windows: .venv\Scripts\activate
+pip install --upgrade pip
 pip install -r requirements.txt
 pip install -e .
 cp .env.example .env
